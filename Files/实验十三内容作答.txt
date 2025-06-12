@@ -1,0 +1,241 @@
+1. 单例模式 (Singleton Pattern)
+单例模式属于 创建型模式。
+
+定义：确保一个类只有一个实例，并提供一个全局访问点来获取这个实例。
+
+特点总结：
+
+优点：
+保证了实例的唯一性，适用于需要全局共享状态的场景（如配置管理器、日志记录器）。
+节省内存，因为实例只创建一次。
+提供了一个全局访问点，方便了客户端代码的调用。
+缺点：
+可能违反单一职责原则，因为它既要负责业务逻辑，又要管理自己的实例。
+对测试不友好，因为全局状态会使得单元测试隔离变得困难。
+在多线程环境下需要特别处理，以防止创建出多个实例。
+代码示例 (Python):
+
+python
+class DatabaseConnection:
+    """
+    一个单例的数据库连接类。
+    """
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(DatabaseConnection, cls).__new__(cls)
+            # 可以在这里进行一次性的初始化操作
+            print("创建了新的数据库连接实例。")
+        return cls._instance
+
+    def connect(self):
+        print(f"连接到数据库 (实例ID: {id(self)})")
+
+# 客户端代码
+conn1 = DatabaseConnection()
+conn1.connect()
+
+conn2 = DatabaseConnection()
+conn2.connect()
+
+print(f"conn1 和 conn2 是同一个实例吗? {conn1 is conn2}")
+
+# 输出:
+# 创建了新的数据库连接实例。
+# 连接到数据库 (实例ID: 4376378448)
+# 连接到数据库 (实例ID: 4376378448)
+# conn1 和 conn2 是同一个实例吗? True
+2. 工厂方法模式 (Factory Method Pattern)
+工厂方法模式属于 创建型模式。
+
+定义：定义一个用于创建对象的接口（工厂方法），但让子类决定实例化哪一个类。工厂方法使一个类的实例化延迟到其子类。
+
+特点总结：
+
+优点：
+将产品对象的创建过程与客户端代码解耦，客户端只需关心产品的接口，而无需知道具体的实现类。
+易于扩展。当需要引入新产品时，只需添加一个新的具体产品类和一个对应的具体工厂类，符合“开闭原则”。
+缺点：
+每增加一个产品，就需要增加一个具体产品类和一个具体工厂类，导致系统中的类数量成倍增加，加大了系统的复杂性。
+代码示例 (Python):
+
+python
+from abc import ABC, abstractmethod
+
+# 1. 定义产品接口
+class Button(ABC):
+    @abstractmethod
+    def render(self):
+        pass
+
+# 2. 创建具体产品
+class WindowsButton(Button):
+    def render(self):
+        print("渲染一个 Windows 风格的按钮")
+
+class HTMLButton(Button):
+    def render(self):
+        print("渲染一个 HTML 风格的按钮")
+
+# 3. 定义创建者（工厂）接口
+class Dialog(ABC):
+    @abstractmethod
+    def create_button(self) -> Button:
+        """这是工厂方法"""
+        pass
+
+    def render_dialog(self):
+        button = self.create_button()
+        print("对话框正在渲染...")
+        button.render()
+
+# 4. 创建具体创建者
+class WindowsDialog(Dialog):
+    def create_button(self) -> Button:
+        return WindowsButton()
+
+class WebDialog(Dialog):
+    def create_button(self) -> Button:
+        return HTMLButton()
+
+# 客户端代码
+def client_code(dialog: Dialog):
+    dialog.render_dialog()
+
+print("使用 Windows 对话框:")
+client_code(WindowsDialog())
+
+print("\n使用 Web 对话框:")
+client_code(WebDialog())
+3. 适配器模式 (Adapter Pattern)
+适配器模式属于 结构型模式。
+
+定义：将一个类的接口转换成客户端所期待的另一个接口。适配器模式使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。
+
+特点总结：
+
+优点：
+提高了类的复用性，可以让任何两个没有关联的类一起运行。
+增加了类的透明度，客户端可以调用统一的接口。
+灵活性好，更换适配器即可适配不同的旧组件。
+缺点：
+会引入额外的类，增加系统的复杂性。
+如果过度使用，可能会让系统变得混乱。
+代码示例 (Python):
+
+python
+class EuropeanSocket:
+    """被适配者（Adaptee）：欧洲标准插座"""
+    def voltage(self):
+        return 230
+
+class USASocketInterface:
+    """目标接口（Target）：美国标准插座接口"""
+    def voltage(self):
+        raise NotImplementedError
+
+class SocketAdapter(USASocketInterface):
+    """适配器（Adapter）"""
+    def __init__(self, euro_socket: EuropeanSocket):
+        self._euro_socket = euro_socket
+
+    def voltage(self):
+        # 将欧洲电压 230V 转换为美国电压 120V
+        return self._euro_socket.voltage() - 110
+
+class USAPowerSource:
+    """客户端（Client）：只能使用美国标准插座"""
+    def __init__(self, socket: USASocketInterface):
+        self.socket = socket
+
+    def power_on(self):
+        if self.socket.voltage() == 120:
+            print("设备已通电！")
+        else:
+            print("电压不匹配，危险！")
+
+# 客户端代码
+euro_socket = EuropeanSocket()
+adapter = SocketAdapter(euro_socket)
+usa_power = USAPowerSource(adapter)
+
+usa_power.power_on()
+# 输出: 设备已通电！
+4. 观察者模式 (Observer Pattern)
+观察者模式属于 行为型模式。
+
+定义：定义了对象之间的一种一对多的依赖关系，当一个对象（被观察者/主题）的状态发生改变时，所有依赖于它的对象（观察者）都将得到通知并自动更新。
+
+特点总结：
+
+优点：
+实现了“被观察者”和“观察者”之间的低耦合，双方都不知道对方的具体实现。
+支持广播通信，被观察者会向所有注册的观察者发送通知。
+符合“开闭原则”，可以独立地改变和复用被观察者和观察者。
+缺点：
+如果观察者之间存在循环依赖，可能导致系统崩溃。
+如果观察者过多，通知所有观察者会花费很多时间。
+没有机制让观察者知道是主题的哪个部分发生了变化。
+代码示例 (Python):
+
+python
+from abc import ABC, abstractmethod
+from typing import List
+
+class Subject:
+    """被观察者（主题）"""
+    _observers: List['Observer'] = []
+
+    def attach(self, observer: 'Observer'):
+        if observer not in self._observers:
+            self._observers.append(observer)
+
+    def detach(self, observer: 'Observer'):
+        self._observers.remove(observer)
+
+    def notify(self, message: str):
+        for observer in self._observers:
+            observer.update(message)
+
+class Editor(Subject):
+    """一个具体的被观察者，例如文本编辑器"""
+    def __init__(self):
+        super().__init__()
+        self._content = ""
+
+    def set_content(self, content: str):
+        self._content = content
+        self.notify(f"内容已更新: {self._content}")
+
+class Observer(ABC):
+    """观察者接口"""
+    @abstractmethod
+    def update(self, message: str):
+        pass
+
+class Logger(Observer):
+    """具体的观察者，记录日志"""
+    def update(self, message: str):
+        print(f"[日志记录器] {message}")
+
+class EmailNotifier(Observer):
+    """具体的观察者，发送邮件通知"""
+    def update(self, message: str):
+        print(f"[邮件通知] 发送通知邮件... 内容: {message}")
+
+# 客户端代码
+editor = Editor()
+logger = Logger()
+notifier = EmailNotifier()
+
+# 订阅通知
+editor.attach(logger)
+editor.attach(notifier)
+
+editor.set_content("Hello, World!")
+
+print("\n--- 用户取消了日志记录 ---")
+editor.detach(logger)
+
+editor.set_content("Design Patterns are awesome!")
